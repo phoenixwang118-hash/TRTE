@@ -1,0 +1,262 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "15709933@qq.com",
+      "name": "15709933",
+      "password": "16733861acc79caebaa0ac94354b7992:a61187452df0379a17be6be2f28391eb6b4e36e6fb6f39ef8707efc1f94e85ddef29fdbc0c7dffef4f335cb626eb47717b6716f31c61de5a8876dee4f0cb4dea",
+      "plan": "free",
+      "workspaceIds": [
+        1
+      ],
+      "createdAt": "2026-07-18T15:46:25.377Z"
+    }
+  ],
+  "workspaces": [
+    {
+      "id": 1,
+      "userId": 1,
+      "name": "我的工作空间",
+      "createdAt": "2026-07-18T15:46:25.378Z"
+    }
+  ],
+  "api_keys": [],
+  "usage_logs": [],
+  "workflows": [
+    {
+      "id": 1,
+      "userId": 0,
+      "name": "电商商品图全流程",
+      "isTemplate": true,
+      "steps": [
+        {
+          "engine": "photoroom",
+          "endpoint": "bg-remove",
+          "label": "智能抠图"
+        },
+        {
+          "engine": "photoroom",
+          "endpoint": "scene",
+          "label": "场景生成",
+          "params": {
+            "prompt": "modern studio, soft shadow"
+          }
+        },
+        {
+          "engine": "ideogram",
+          "endpoint": "upscale",
+          "label": "高清放大"
+        }
+      ],
+      "config": {
+        "description": "商品图 → 抠图 → 场景替换 → 高清放大"
+      },
+      "createdAt": "2026-07-18T15:21:28.941Z"
+    },
+    {
+      "id": 2,
+      "userId": 0,
+      "name": "虚拟试穿工作流",
+      "isTemplate": true,
+      "steps": [
+        {
+          "engine": "photoroom",
+          "endpoint": "bg-remove",
+          "label": "商品抠图"
+        },
+        {
+          "engine": "bfl",
+          "endpoint": "vto",
+          "label": "虚拟试穿"
+        },
+        {
+          "engine": "ideogram",
+          "endpoint": "upscale",
+          "label": "超清放大"
+        }
+      ],
+      "config": {
+        "description": "服装商品 → 抠图 → 模特试穿 → 高清放大"
+      },
+      "createdAt": "2026-07-18T15:21:28.954Z"
+    },
+    {
+      "id": 3,
+      "userId": 0,
+      "name": "海报设计工作流",
+      "isTemplate": true,
+      "steps": [
+        {
+          "engine": "gemini",
+          "endpoint": "generate",
+          "label": "AI 生成主图"
+        },
+        {
+          "engine": "ideogram",
+          "endpoint": "remix",
+          "label": "设计重构",
+          "params": {
+            "styleType": "DESIGN"
+          }
+        },
+        {
+          "engine": "ideogram",
+          "endpoint": "upscale",
+          "label": "高清输出"
+        }
+      ],
+      "config": {
+        "description": "文案 → AI 生成 → 设计重构 → 高清输出"
+      },
+      "createdAt": "2026-07-18T15:21:28.955Z"
+    }
+  ],
+  "workflow_runs": [],
+  "products": [
+    {
+      "id": 1,
+      "title": "Neon City Dreams",
+      "tag": "科幻",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Kira",
+      "designerId": 1,
+      "sales": 128,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T15:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 2,
+      "title": "Retro Wave 80s",
+      "tag": "复古",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Neo",
+      "designerId": 2,
+      "sales": 96,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T14:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 3,
+      "title": "Cyber Koi",
+      "tag": "动漫",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Kira",
+      "designerId": 1,
+      "sales": 211,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T13:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 4,
+      "title": "Lo-Fi Beats",
+      "tag": "音乐",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Neo",
+      "designerId": 2,
+      "sales": 74,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T12:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 5,
+      "title": "Street Glitch",
+      "tag": "潮流",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Kira",
+      "designerId": 1,
+      "sales": 153,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T11:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 6,
+      "title": "Minimal Mono",
+      "tag": "极简",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Neo",
+      "designerId": 2,
+      "sales": 42,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T10:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 7,
+      "title": "Sport Pulse",
+      "tag": "运动",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Kira",
+      "designerId": 1,
+      "sales": 88,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T09:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    },
+    {
+      "id": 8,
+      "title": "Cat Nebula",
+      "tag": "宠物",
+      "price": 16,
+      "oldPrice": 24,
+      "authorName": "AI Studio · Neo",
+      "designerId": 2,
+      "sales": 167,
+      "authorId": 0,
+      "imageUrl": "",
+      "desc": "由 CoXoF Ai 引擎生成的可商用设计，限时优惠进行中。",
+      "createdAt": "2026-07-18T08:21:28.957Z",
+      "saleEndsAt": "2026-07-19T15:21:28.957Z"
+    }
+  ],
+  "designers": [
+    {
+      "id": 1,
+      "userId": 0,
+      "shopName": "AI Studio · Kira",
+      "bio": "赛博朋克与未来主义设计师",
+      "createdAt": "2026-07-18T15:21:28.957Z"
+    },
+    {
+      "id": 2,
+      "userId": 0,
+      "shopName": "AI Studio · Neo",
+      "bio": "复古与怀旧美学创作者",
+      "createdAt": "2026-07-18T15:21:28.957Z"
+    }
+  ],
+  "_meta": {
+    "nextUserId": 2,
+    "nextWorkspaceId": 2,
+    "nextUsageId": 1,
+    "nextWorkflowId": 4,
+    "nextRunId": 1,
+    "nextProductId": 9,
+    "nextDesignerId": 3
+  }
+}
