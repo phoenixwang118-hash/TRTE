@@ -1,14 +1,10 @@
 /**
- * CoXoF Ai SaaS — 后端服务主入口
+ * CoXoF Ai DIY V3 — 后端服务主入口
  *
- * 功能：
- *   - 用户认证（JWT）+ 多租户工作空间
- *   - 订阅管理（Free / Pro / Enterprise）
- *   - DIY 工作流系统
- *   - 统一 API Key 管理（用户自有 + 平台级）
- *   - 限流（全局 + AI + 按订阅方案）
- *   - 缓存（内存/Redis）
- *   - AI API 代理（6 大引擎）
+ * 功能（第二阶段当前状态：会员系统已删除，V3 业务路由待重建）：
+ *   - 6 大 AI 引擎代理（Gemini / BFL / Photoroom / DeepSeek / Doubao / Ideogram）
+ *   - 限流（全局 + AI）+ 缓存（内存/Redis）
+ *   - optionalAuth 中间件保留（兼容前端透传 Key 模式，无登录态）
  */
 import express from 'express';
 import cors from 'cors';
@@ -32,12 +28,7 @@ import deepseekRouter from './src/routes/deepseek.js';
 import doubaoRouter from './src/routes/doubao.js';
 import ideogramRouter from './src/routes/ideogram.js';
 
-// SaaS 路由
-import authRouter from './src/routes/auth.js';
-import workspaceRouter from './src/routes/workspace.js';
-import workflowRouter from './src/routes/workflow.js';
-import billingRouter from './src/routes/billing.js';
-import marketplaceRouter from './src/routes/marketplace.js';
+// SaaS 路由（会员系统已于第二阶段删除，仅保留 AI 引擎 + V3 业务路由）
 
 const app = express();
 
@@ -66,23 +57,15 @@ app.use(globalLimiter);
 // ── 首页 ──
 app.get('/', (req, res) => {
   res.json({
-    name: 'CoXoF Ai SaaS API',
-    version: '2.0.0',
-    description: 'AI 设计 SaaS 平台 — 多租户 + DIY 工作流',
+    name: 'CoXoF Ai DIY V3 API',
+    version: '3.0.0',
+    description: 'AI 设计 DIY 工作流平台 — 6 大引擎 + 双业务线',
     docs: '/api/health',
-    auth: '/api/auth/register',
   });
 });
 
 // ── 系统状态 ──
 app.use('/api', statusRouter);
-
-// ── SaaS 路由（认证/工作空间/工作流/计费）──
-app.use('/api/auth', authRouter);
-app.use('/api/workspaces', workspaceRouter);
-app.use('/api/workflows', workflowRouter);
-app.use('/api/billing', billingRouter);
-app.use('/api/marketplace', marketplaceRouter);
 
 // ── AI 接口（统一加 optionalAuth + 用量追踪）──
 // 使用 optionalAuth 兼容未登录用户（旧前端透传 Key 模式）
@@ -168,15 +151,14 @@ app.use((err, req, res, next) => {
 const PORT = config.port;
 const server = app.listen(PORT, () => {
   console.log('┌──────────────────────────────────────────────────┐');
-  console.log('│  CoXoF Ai SaaS Platform v2.0                    │');
+  console.log('│  CoXoF Ai DIY V3 v3.0                           │');
   console.log('│  端口: ' + PORT + '                                        │');
   console.log('│  环境: ' + config.nodeEnv.padEnd(10) + '                             │');
-  console.log('│  认证: JWT (7天有效期)                            │');
   console.log('│  缓存: ' + (config.cache.useRedis ? 'Redis' : '内存') + '                                      │');
   console.log('│  限流: ' + config.rateLimit.perMinute + '/分钟, AI ' + config.rateLimit.aiPerMinute + '/分钟             │');
   console.log('└──────────────────────────────────────────────────┘');
   console.log('\n已配置的 API 提供商:', Object.entries(config.apiKeys).filter(([_, v]) => v).map(([k]) => k).join(', ') || '无（请配置 .env）');
-  console.log('SaaS 路由: /api/auth, /api/workspaces, /api/workflows, /api/billing, /api/marketplace\n');
+  console.log('AI 路由: /api/ai/{gemini,bfl,photoroom,deepseek,doubao,ideogram}\n');
 });
 
 // 优雅关闭

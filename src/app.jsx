@@ -12,7 +12,6 @@ import { exportWorkspaceBackup, restoreWorkspaceBackup, autoBackupCheck } from '
 import { generateNegativePrompt, enhancePromptWithDeepSeek } from './utils/prompthelper';
 import { generateDetailPlan, getPlatformSpecs, generateColorScheme, generateTypography } from './utils/ecommerceDetailGenerator';
 import { GEMINI_DIRECT_API, BFL_DIRECT_API, DOUBAO_DIRECT_API, DEEPSEEK_DIRECT_API, GEMINI_BATCH_API, BFL_VTO_API, BFL_OUTPAINT_API, BFL_ERASE_API, PHOTOROOM_BG_REMOVE, PHOTOROOM_SCENE, PHOTOROOM_EDIT_V2, GEMINI_CHAT_API, IDEOGRAM_GENERATE_API, IDEOGRAM_REMIX_API, IDEOGRAM_UPSCALE_API } from './api';
-import { useAuth } from './saas/AuthContext.jsx';
 
 const ENGINES=[{k:'gemini',l:'Gemini'},{k:'bfl',l:'BFL'},{k:'doubao',l:'Doubao'}];
 export default function App({ initialTab }) {
@@ -336,33 +335,6 @@ export default function App({ initialTab }) {
 
   const saveArchive = ()=>{if(!archiveTitle.trim())return setSystemMsg('Enter product title');setProductArchives(prev=>[{id:Date.now(),title:archiveTitle,sku:archiveSku,snapshot:{},ecInfo:ecData,createdAt:new Date().toISOString()},...prev]);setSystemMsg('Archive saved')};
   const deleteArchive = (id)=>{setProductArchives(prev=>prev.filter(a=>a.id!==id))};
-  // ── 上架到市场 ──
-  const { user: authUser } = useAuth();
-  const [publishOpen, setPublishOpen] = useState(false);
-  const [pubTitle, setPubTitle] = useState('');
-  const [pubTag, setPubTag] = useState('潮流');
-  const [pubPrice, setPubPrice] = useState(16);
-  const [pubOldPrice, setPubOldPrice] = useState(24);
-  const [pubDesc, setPubDesc] = useState('');
-  const [publishing, setPublishing] = useState(false);
-  const handlePublish = async () => {
-    if (!currentImage) return setSystemMsg('请先生成或选择图片');
-    if (!pubTitle.trim()) return setSystemMsg('请填写商品标题');
-    const token = localStorage.getItem('coxof_ai_token');
-    if (!token) return setSystemMsg('请先登录');
-    setPublishing(true);
-    try {
-      const resp = await fetch('/api/marketplace', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({ title: pubTitle.trim(), tag: pubTag, price: Number(pubPrice), oldPrice: Number(pubOldPrice), desc: pubDesc, image: currentImage }),
-      });
-      const data = await resp.json();
-      if (data.success) { setSystemMsg('已上架到市场：' + data.product.title); setPublishOpen(false); setPubTitle(''); }
-      else setSystemMsg('上架失败：' + (data.error || '未知错误'));
-    } catch (e) { setSystemMsg('上架失败：' + e.message); }
-    finally { setPublishing(false); }
-  };
   const saveModel = ()=>{setSavedModels(prev=>[{id:Date.now(),name:archiveTitle||'Model #'+Date.now(),prompt,thumbnail:currentImage,savedAt:new Date().toISOString()},...prev]);setSystemMsg('Model saved')};
   const handleGridChange = (n) => { setCanvasGrid(n); };
   const handleRefImage = (img, idx) => { const next=[...refImages];next[idx]=img;setRefImages(next);setActiveImageIndex(-1);const item={id:Date.now()+idx,data:img,prompt:'参考图'+(idx+1),type:'refImg',name:'参考图'+(idx+1),modelConfig:{}};setHistory(prev=>{const clean=prev.filter(h=>h.type!=='refImg');clean.unshift(item);return clean}); };
@@ -1297,29 +1269,6 @@ export default function App({ initialTab }) {
           </div>
         </div>
       )}
-      {publishOpen&&(
-        <div className="api-modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setPublishOpen(false)}>
-          <div className="api-modal" style={{maxWidth:440}}>
-            <div className="h-11 px-4 flex items-center justify-between border-b border-[#343740] bg-[#1c1e27]"><span className="text-xs font-black text-white">上架到市场</span><button onClick={()=>setPublishOpen(false)} className="w-7 h-7 text-slate-400 hover:text-white">&times;</button></div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 panel-scroll">
-              <div className="flex gap-3">
-                <img src={currentImage} alt="" className="w-20 h-20 rounded object-cover border border-[#2a2d35] flex-shrink-0" />
-                <div className="flex-1"><label className="text-[10px] font-bold text-slate-500 uppercase">标题</label><input value={pubTitle} onChange={e=>setPubTitle(e.target.value)} className="archive-field mt-1" placeholder="设计名称" /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[10px] font-bold text-slate-500 uppercase">分类</label><select value={pubTag} onChange={e=>setPubTag(e.target.value)} className="archive-field mt-1">{['潮流','复古','动漫','科幻','音乐','运动','极简','宠物'].map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                <div><label className="text-[10px] font-bold text-slate-500 uppercase">促销价</label><input type="number" value={pubPrice} onChange={e=>setPubPrice(e.target.value)} className="archive-field mt-1" /></div>
-                <div><label className="text-[10px] font-bold text-slate-500 uppercase">原价</label><input type="number" value={pubOldPrice} onChange={e=>setPubOldPrice(e.target.value)} className="archive-field mt-1" /></div>
-              </div>
-              <div><label className="text-[10px] font-bold text-slate-500 uppercase">描述</label><textarea value={pubDesc} onChange={e=>setPubDesc(e.target.value)} className="archive-field mt-1" rows={2} placeholder="可选" /></div>
-            </div>
-            <div className="px-4 py-3 border-t border-[#2a2d35] flex justify-end gap-2">
-              <button onClick={()=>setPublishOpen(false)} className="px-4 py-2 text-xs text-slate-400 hover:text-white">取消</button>
-              <button onClick={handlePublish} disabled={publishing} className="px-4 py-2 text-xs font-bold rounded bg-[#6366f1] hover:bg-[#4f46e5] text-white disabled:opacity-50">{publishing?'上架中…':'上架到市场'}</button>
-            </div>
-          </div>
-        </div>
-      )}
       {systemMsg&&<div className="fixed top-8 left-1/2 -translate-x-1/2 bg-red-500/10 text-red-400 border border-red-500/20 px-6 py-3 rounded-2xl text-xs font-bold z-[200] flex items-center gap-4"><span>{systemMsg}</span><button onClick={()=>setSystemMsg('')} className="hover:text-white">&times;</button></div>}
       <div className={`vedaart-workspace ${!leftPanelOpen?'left-collapsed':''} ${!rightPanelOpen?'right-collapsed':''} ${activeTab==='archive'?'center-collapsed':''}`}>
         <div className={`left-workspace-column ${!leftPanelOpen?'panel-collapsed':''}`}>
@@ -1331,7 +1280,7 @@ export default function App({ initialTab }) {
             <CanvasView canvasGrid={canvasGrid} refImages={refImages} currentImage={currentImage} history={history} activeImageIndex={activeImageIndex} batchImages={[]} onRemoveImage={(id)=>{setHistory(prev=>prev.filter(h=>h.id!==id));if(id==='current')setCurrentImage(null)}} onSelectImage={(data,idx)=>{setCurrentImage(data);setActiveImageIndex(idx);setViewMode('generated')}}/>
             {!leftPanelOpen&&<button onClick={()=>setLeftPanelOpen(true)} className="absolute left-0 top-1/2 -translate-y-1/2 z-50 w-6 h-14 bg-[#20232a] border border-[#2a2d35] rounded-r text-slate-500 hover:text-white">{'>'}</button>}
             {!rightPanelOpen&&<button onClick={()=>setRightPanelOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-14 bg-[#20232a] border border-[#2a2d35] rounded-l text-slate-500 hover:text-white">{'<'}</button>}
-            {(currentImage||refImages.filter(Boolean).length>0)&&<div className="absolute top-3 right-3 z-50 flex flex-col gap-1">{viewMode==='generated'&&[1,2,4,6,9].map(n=><button key={n} onClick={()=>handleGridChange(n)} className={`w-7 h-7 rounded text-[10px] font-bold border ${canvasGrid===n?'bg-[#6366f1]/20 text-[#a5b4fc] border-[#6366f1]/50':'bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white'}`}>{n}</button>)}<button onClick={()=>setChatOpen(!chatOpen)} className={`w-7 h-7 rounded text-[10px] font-bold border ${chatOpen?"bg-[#6366f1]/20 text-[#a5b4fc] border-[#6366f1]/50":"bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white"}`} title="对话生成">💬</button>{currentImage&&<button onClick={()=>{const a=document.createElement("a");a.href=currentImage;a.download="CoXoF_"+Date.now()+".png";a.click()}} className="w-7 h-7 rounded text-[8px] font-bold border bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white" title="下载">↓</button>}{currentImage&&<button onClick={()=>setPublishOpen(true)} className="w-7 h-7 rounded text-[8px] font-bold border bg-[#6366f1]/15 text-[#a5b4fc] border-[#6366f1]/40 hover:bg-[#6366f1]/25" title="上架到市场">市</button>}<button onClick={()=>setHistory([])} className="w-7 h-7 rounded text-[8px] font-bold border bg-[#1a1d24] text-red-400/70 border-[#2a2d35] hover:text-red-300" title="清空历史">×</button></div>}
+            {(currentImage||refImages.filter(Boolean).length>0)&&<div className="absolute top-3 right-3 z-50 flex flex-col gap-1">{viewMode==='generated'&&[1,2,4,6,9].map(n=><button key={n} onClick={()=>handleGridChange(n)} className={`w-7 h-7 rounded text-[10px] font-bold border ${canvasGrid===n?'bg-[#6366f1]/20 text-[#a5b4fc] border-[#6366f1]/50':'bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white'}`}>{n}</button>)}<button onClick={()=>setChatOpen(!chatOpen)} className={`w-7 h-7 rounded text-[10px] font-bold border ${chatOpen?"bg-[#6366f1]/20 text-[#a5b4fc] border-[#6366f1]/50":"bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white"}`} title="对话生成">💬</button>{currentImage&&<button onClick={()=>{const a=document.createElement("a");a.href=currentImage;a.download="CoXoF_"+Date.now()+".png";a.click()}} className="w-7 h-7 rounded text-[8px] font-bold border bg-[#1a1d24] text-slate-500 border-[#2a2d35] hover:text-white" title="下载">↓</button>}<button onClick={()=>setHistory([])} className="w-7 h-7 rounded text-[8px] font-bold border bg-[#1a1d24] text-red-400/70 border-[#2a2d35] hover:text-red-300" title="清空历史">×</button></div>}
           </div>
           {chatOpen&&<ChatPanel onChatGenerate={handleChatGenerate} geminiKey={geminiKey} isOpen={chatOpen} onClose={()=>setChatOpen(false)} currentImage={currentImage} onSelectFromHistory={()=>{setViewMode('generated')}}/>}
         {currentImage&&<HistoryBar history={history} currentImage={currentImage} activeIndex={activeImageIndex} setActiveIndex={setActiveImageIndex} onSelectHistory={(data)=>{setCurrentImage(data.data||data);setActiveImageIndex(-1);setViewMode('generated')}} onChatEdit={()=>setChatOpen(true)}/>}
