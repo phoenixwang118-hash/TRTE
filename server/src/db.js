@@ -34,7 +34,25 @@ let db = {
   workflow_runs: [],
   products: [],
   designers: [],
-  _meta: { nextUserId: 1, nextWorkspaceId: 1, nextUsageId: 1, nextWorkflowId: 1, nextRunId: 1, nextProductId: 1, nextDesignerId: 1 },
+  // ── COXOF AI DIY V3 新增表 ──
+  designs: [],                 // 设计稿（用户 AI 生成图）
+  design_versions: [],         // 设计稿版本
+  carts: [],                   // 购物车
+  cart_items: [],              // 购物车条目
+  orders: [],                  // 订单
+  order_items: [],             // 订单条目
+  addresses: [],               // 收货地址
+  payments: [],                // 支付记录
+  creator_products: [],        // 设计者商品
+  share_links: [],             // 分享链接
+  creator_orders: [],          // 设计者侧订单视图
+  earning_transactions: [],    // 佣金流水
+  _meta: {
+    nextUserId: 1, nextWorkspaceId: 1, nextUsageId: 1, nextWorkflowId: 1, nextRunId: 1,
+    nextProductId: 1, nextDesignerId: 1,
+    nextDesignId: 1, nextCartId: 1, nextCartItemId: 1, nextOrderId: 1, nextOrderItemId: 1,
+    nextAddressId: 1, nextPaymentId: 1, nextCreatorProductId: 1, nextShareLinkId: 1, nextEarningId: 1,
+  },
 };
 
 let writeTimer = null;
@@ -49,7 +67,10 @@ function load() {
       db = { ...db, ...parsed };
       // 深合并 _meta：确保新增的计数器键有默认值（旧库可能缺 nextProductId 等）
       db._meta = {
-        nextUserId: 1, nextWorkspaceId: 1, nextUsageId: 1, nextWorkflowId: 1, nextRunId: 1, nextProductId: 1, nextDesignerId: 1,
+        nextUserId: 1, nextWorkspaceId: 1, nextUsageId: 1, nextWorkflowId: 1, nextRunId: 1,
+        nextProductId: 1, nextDesignerId: 1,
+        nextDesignId: 1, nextCartId: 1, nextCartItemId: 1, nextOrderId: 1, nextOrderItemId: 1,
+        nextAddressId: 1, nextPaymentId: 1, nextCreatorProductId: 1, nextShareLinkId: 1, nextEarningId: 1,
         ...(parsed._meta || {}),
       };
       console.log('[DB] 数据已加载:', db.users.length, '用户,', db.workflows.length, '工作流,', db.products.length, '商品');
@@ -577,3 +598,524 @@ function initMarketplace() {
 }
 
 initMarketplace();
+
+/* ════════════════════════════════════════════════════════════
+ * COXOF AI DIY V3 — 数据访问层
+ * 第二阶段：设计稿 / 购物车 / 订单 / 设计者商品 / 分享链接 / 佣金
+ * ════════════════════════════════════════════════════════════ */
+
+// ── POD 商品目录（6 个静态 POD 产品，与前端 podStore 对齐）──
+export const POD_CATALOG = [
+  {
+    id: 'pod_tshirt',
+    name: 'T 恤',
+    category: 'apparel',
+    baseCost: 8,    // 衣服成本
+    printingCost: 4, // 印花成本
+    packagingCost: 1.5,
+    colors: ['White', 'Black', 'Navy', 'Heather Gray'],
+    sizes: ['S', 'M', 'L', 'XL', '2XL'],
+    material: '100% 棉',
+    printing: 'DTG',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+  {
+    id: 'pod_hoodie',
+    name: '连帽卫衣',
+    category: 'apparel',
+    baseCost: 18,
+    printingCost: 5,
+    packagingCost: 2,
+    colors: ['Black', 'Navy', 'Maroon', 'Forest'],
+    sizes: ['S', 'M', 'L', 'XL', '2XL'],
+    material: '80% 棉 / 20% 聚酯',
+    printing: 'DTG',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+  {
+    id: 'pod_tote',
+    name: '帆布袋',
+    category: 'accessory',
+    baseCost: 4,
+    printingCost: 2,
+    packagingCost: 0.5,
+    colors: ['Natural', 'Black', 'Navy'],
+    sizes: ['Standard'],
+    material: '12 oz 帆布',
+    printing: '丝网印刷',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+  {
+    id: 'pod_phonecase',
+    name: '手机壳',
+    category: 'accessory',
+    baseCost: 3,
+    printingCost: 1.5,
+    packagingCost: 0.5,
+    colors: ['Matte Black', 'Clear', 'White'],
+    sizes: ['iPhone 15', 'iPhone 15 Pro', 'iPhone 14', 'Samsung S24'],
+    material: 'TPU + PC',
+    printing: 'UV 打印',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+  {
+    id: 'pod_poster',
+    name: '海报',
+    category: 'home',
+    baseCost: 3,
+    printingCost: 2,
+    packagingCost: 1,
+    colors: ['Matte', 'Glossy'],
+    sizes: ['A4', 'A3', 'A2', '11x14 in', '24x36 in'],
+    material: '相纸 230g',
+    printing: '激光打印',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+  {
+    id: 'pod_mug',
+    name: '马克杯',
+    category: 'home',
+    baseCost: 4,
+    printingCost: 2.5,
+    packagingCost: 1.5,
+    colors: ['White'],
+    sizes: ['11 oz', '15 oz'],
+    material: '陶瓷',
+    printing: '热升华',
+    mockupWidth: 1200,
+    mockupHeight: 1200,
+  },
+];
+
+// 平台费率（占小计百分比）
+const PLATFORM_FEE_RATE = 0.10; // 10%
+// 支付费率（占小计百分比）
+const PAYMENT_FEE_RATE = 0.029; // 2.9%
+
+export function getPodProduct(id) {
+  return POD_CATALOG.find(p => p.id === id) || null;
+}
+
+// 计算 POD 成本（不含设计者佣金）
+export function calculatePodCost(productId, quantity = 1) {
+  const pod = getPodProduct(productId);
+  if (!pod) return { total: 0, base: 0, printing: 0, packaging: 0, platform: 0, payment: 0 };
+  const unitCost = pod.baseCost + pod.printingCost + pod.packagingCost;
+  const subtotal = unitCost * quantity;
+  const platform = +(subtotal * PLATFORM_FEE_RATE).toFixed(2);
+  const payment = +(subtotal * PAYMENT_FEE_RATE).toFixed(2);
+  return {
+    base: +(pod.baseCost * quantity).toFixed(2),
+    printing: +(pod.printingCost * quantity).toFixed(2),
+    packaging: +(pod.packagingCost * quantity).toFixed(2),
+    platform,
+    payment,
+    total: +(subtotal + platform + payment).toFixed(2),
+  };
+}
+
+// ── Design 设计稿 ──
+export const Design = {
+  create({ userId, title, imageUrl, prompt, engine, source = 'manual' }) {
+    const d = {
+      id: db._meta.nextDesignId++,
+      userId,
+      title: title || '未命名设计',
+      imageUrl,
+      prompt,
+      engine,
+      source,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.designs.push(d);
+    // 版本记录
+    db.design_versions.push({
+      id: genId('dv_'),
+      designId: d.id,
+      version: 1,
+      imageUrl,
+      prompt,
+      createdAt: d.createdAt,
+    });
+    scheduleSave();
+    return d;
+  },
+  findByUserId(userId) {
+    return db.designs.filter(d => d.userId === userId).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  },
+  findById(id) {
+    return db.designs.find(d => d.id === id) || null;
+  },
+  update(id, updates) {
+    const d = this.findById(id);
+    if (!d) return { error: '设计稿不存在' };
+    Object.assign(d, updates, { updatedAt: new Date().toISOString() });
+    if (updates.imageUrl) {
+      d.version += 1;
+      db.design_versions.push({
+        id: genId('dv_'),
+        designId: d.id,
+        version: d.version,
+        imageUrl: updates.imageUrl,
+        prompt: updates.prompt || d.prompt,
+        createdAt: d.updatedAt,
+      });
+    }
+    scheduleSave();
+    return { design: d };
+  },
+};
+
+// ── Cart 购物车 ──
+export const Cart = {
+  getOrCreate(userId) {
+    let cart = db.carts.find(c => c.userId === userId);
+    if (!cart) {
+      cart = {
+        id: db._meta.nextCartId++,
+        userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.carts.push(cart);
+      scheduleSave();
+    }
+    return cart;
+  },
+  listItems(userId) {
+    const cart = this.getOrCreate(userId);
+    return db.cart_items.filter(it => it.cartId === cart.id);
+  },
+  addItem(userId, item) {
+    const cart = this.getOrCreate(userId);
+    // 同款合并（creatorProductId + podProductId + color + size）
+    const existing = db.cart_items.find(it =>
+      it.cartId === cart.id &&
+      it.creatorProductId === (item.creatorProductId || null) &&
+      it.podProductId === item.podProductId &&
+      (it.color || '') === (item.color || '') &&
+      (it.size || '') === (item.size || '')
+    );
+    if (existing) {
+      existing.quantity += item.quantity || 1;
+      existing.updatedAt = new Date().toISOString();
+    } else {
+      const newItem = {
+        id: db._meta.nextCartItemId++,
+        cartId: cart.id,
+        userId,
+        creatorProductId: item.creatorProductId || null,
+        podProductId: item.podProductId,
+        designImage: item.designImage || '',
+        mockup: item.mockup || '',
+        title: item.title || '自定义商品',
+        color: item.color || '',
+        size: item.size || '',
+        quantity: item.quantity || 1,
+        unitPrice: Number(item.unitPrice) || 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.cart_items.push(newItem);
+    }
+    cart.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return this.listItems(userId);
+  },
+  updateItem(userId, itemId, { quantity }) {
+    const item = db.cart_items.find(it => it.id === itemId && it.userId === userId);
+    if (!item) return { error: '条目不存在' };
+    if (quantity <= 0) {
+      db.cart_items = db.cart_items.filter(it => it.id !== itemId);
+    } else {
+      item.quantity = quantity;
+      item.updatedAt = new Date().toISOString();
+    }
+    scheduleSave();
+    return { item };
+  },
+  removeItem(userId, itemId) {
+    db.cart_items = db.cart_items.filter(it => !(it.id === itemId && it.userId === userId));
+    scheduleSave();
+    return { success: true };
+  },
+  clear(userId) {
+    const cart = this.getOrCreate(userId);
+    db.cart_items = db.cart_items.filter(it => it.cartId !== cart.id);
+    cart.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return { success: true };
+  },
+};
+
+// ── Address 收货地址 ──
+export const Address = {
+  create(userId, addr) {
+    const a = {
+      id: db._meta.nextAddressId++,
+      userId,
+      name: addr.name,
+      phone: addr.phone,
+      line1: addr.line1,
+      line2: addr.line2 || '',
+      city: addr.city,
+      state: addr.state || '',
+      zip: addr.zip,
+      country: addr.country || 'US',
+      createdAt: new Date().toISOString(),
+    };
+    db.addresses.push(a);
+    scheduleSave();
+    return a;
+  },
+  findByUserId(userId) {
+    return db.addresses.filter(a => a.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+};
+
+// ── Payment 支付记录（Phase 2 mock，Phase 3 → Stripe）──
+export const Payment = {
+  create({ orderId, method = 'mock', amount }) {
+    const p = {
+      id: db._meta.nextPaymentId++,
+      orderId,
+      method,
+      amount,
+      status: 'pending',
+      provider: 'mock',
+      providerPaymentId: 'mock_' + genId(),
+      createdAt: new Date().toISOString(),
+    };
+    db.payments.push(p);
+    scheduleSave();
+    return p;
+  },
+  updateStatus(id, status) {
+    const p = db.payments.find(x => x.id === id);
+    if (!p) return { error: '支付记录不存在' };
+    p.status = status;
+    p.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return { payment: p };
+  },
+  findById(id) { return db.payments.find(p => p.id === id) || null; },
+  findByOrderId(orderId) { return db.payments.find(p => p.orderId === orderId) || null; },
+};
+
+// ── Order 订单 ──
+export const Order = {
+  create({ userId, items, address, subtotal, shipping, tax, total }) {
+    const order = {
+      id: db._meta.nextOrderId++,
+      userId,
+      number: 'ORD-' + Date.now().toString(36).toUpperCase(),
+      status: 'pending',         // pending | paid | shipped | delivered | cancelled
+      paymentStatus: 'pending',  // pending | paid | refunded
+      subtotal: +subtotal.toFixed(2),
+      shipping: +shipping.toFixed(2),
+      tax: +tax.toFixed(2),
+      total: +total.toFixed(2),
+      addressId: address?.id || null,
+      address,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.orders.push(order);
+    // 创建订单条目
+    for (const it of items) {
+      db.order_items.push({
+        id: db._meta.nextOrderItemId++,
+        orderId: order.id,
+        userId,
+        creatorProductId: it.creatorProductId || null,
+        podProductId: it.podProductId,
+        designImage: it.designImage || '',
+        mockup: it.mockup || '',
+        title: it.title,
+        color: it.color || '',
+        size: it.size || '',
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        lineTotal: +(it.unitPrice * it.quantity).toFixed(2),
+      });
+    }
+    scheduleSave();
+    return order;
+  },
+  findById(id) {
+    const order = db.orders.find(o => o.id === id);
+    if (!order) return null;
+    return { ...order, items: db.order_items.filter(it => it.orderId === id) };
+  },
+  findByUserId(userId) {
+    return db.orders.filter(o => o.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+  updateStatus(id, status) {
+    const o = db.orders.find(x => x.id === id);
+    if (!o) return { error: '订单不存在' };
+    o.status = status;
+    o.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return { order: o };
+  },
+  updatePaymentStatus(id, paymentStatus) {
+    const o = db.orders.find(x => x.id === id);
+    if (!o) return { error: '订单不存在' };
+    o.paymentStatus = paymentStatus;
+    o.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return { order: o };
+  },
+  listAll() {
+    return db.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+};
+
+// ── CreatorProduct 设计者商品 ──
+export const CreatorProduct = {
+  create({ userId, designId, podProductId, title, description, mockup, designImage, price, oldPrice }) {
+    const pod = getPodProduct(podProductId);
+    if (!pod) return { error: '无效的 POD 产品' };
+    // 最低价校验：不得低于 POD 成本 + 5 美元
+    const minPrice = pod.baseCost + pod.printingCost + pod.packagingCost + 5;
+    if (Number(price) < minPrice) {
+      return { error: `价格不得低于 $${minPrice.toFixed(2)}` };
+    }
+    const cp = {
+      id: db._meta.nextCreatorProductId++,
+      userId,
+      designId: designId || null,
+      podProductId,
+      title,
+      description: description || '',
+      mockup: mockup || '',
+      designImage: designImage || '',
+      price: Number(price),
+      oldPrice: Number(oldPrice) || 0,
+      status: 'active',    // active | paused
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.creator_products.push(cp);
+    scheduleSave();
+    return cp;
+  },
+  findById(id) { return db.creator_products.find(p => p.id === id) || null; },
+  findByUserId(userId) {
+    return db.creator_products.filter(p => p.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+  update(id, updates) {
+    const p = this.findById(id);
+    if (!p) return { error: '商品不存在' };
+    Object.assign(p, updates, { updatedAt: new Date().toISOString() });
+    scheduleSave();
+    return { product: p };
+  },
+  activate(id) { return this.update(id, { status: 'active' }); },
+  pause(id) { return this.update(id, { status: 'paused' }); },
+};
+
+// ── ShareLink 分享链接 ──
+function genSlug() {
+  return genId('p').slice(0, 12).toLowerCase();
+}
+
+export const ShareLink = {
+  create({ productId, password, expiresInDays, maxSales }) {
+    const expiresAt = expiresInDays
+      ? new Date(Date.now() + expiresInDays * 24 * 3600 * 1000).toISOString()
+      : null;
+    const link = {
+      id: db._meta.nextShareLinkId++,
+      productId,
+      slug: genSlug(),
+      password: password || '',
+      expiresAt,
+      maxSales: maxSales || 0,    // 0 = 不限
+      salesCount: 0,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+    db.share_links.push(link);
+    scheduleSave();
+    return link;
+  },
+  findBySlug(slug) { return db.share_links.find(l => l.slug === slug) || null; },
+  findByProductId(productId) {
+    return db.share_links.filter(l => l.productId === productId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+  incrementSales(slug) {
+    const l = this.findBySlug(slug);
+    if (!l) return { error: '链接不存在' };
+    l.salesCount += 1;
+    scheduleSave();
+    return { link: l };
+  },
+};
+
+// ── Earning 佣金流水 ──
+// 状态机：pending → locked → available → paid
+//        pending/locked → reversed（退款冲正）
+export const Earning = {
+  create({ orderId, creatorUserId, grossAmount, costUnit, breakdown }) {
+    const net = +(grossAmount - costUnit).toFixed(2);
+    const e = {
+      id: db._meta.nextEarningId++,
+      orderId,
+      creatorUserId,
+      grossAmount: +grossAmount.toFixed(2),
+      costUnit: +costUnit.toFixed(2),
+      breakdown: breakdown || {},
+      netAmount: net,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.earning_transactions.push(e);
+    scheduleSave();
+    return e;
+  },
+  findByCreator(userId) {
+    return db.earning_transactions.filter(e => e.creatorUserId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+  getSummary(userId) {
+    const list = this.findByCreator(userId);
+    const sum = (status) => list.filter(e => e.status === status).reduce((s, e) => s + e.netAmount, 0);
+    return {
+      pending: +sum('pending').toFixed(2),
+      locked: +sum('locked').toFixed(2),
+      available: +sum('available').toFixed(2),
+      paid: +sum('paid').toFixed(2),
+      total: +list.reduce((s, e) => s + e.netAmount, 0).toFixed(2),
+      count: list.length,
+    };
+  },
+  transition(id, toStatus) {
+    const e = db.earning_transactions.find(x => x.id === id);
+    if (!e) return { error: '佣金记录不存在' };
+    // 简单状态机校验
+    const allowed = {
+      pending: ['locked', 'reversed'],
+      locked: ['available', 'reversed'],
+      available: ['paid'],
+    };
+    if (!allowed[e.status]?.includes(toStatus)) {
+      return { error: `不允许从 ${e.status} 转为 ${toStatus}` };
+    }
+    e.status = toStatus;
+    e.updatedAt = new Date().toISOString();
+    scheduleSave();
+    return { earning: e };
+  },
+  listAll() {
+    return db.earning_transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+};
+

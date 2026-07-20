@@ -28,7 +28,16 @@ import deepseekRouter from './src/routes/deepseek.js';
 import doubaoRouter from './src/routes/doubao.js';
 import ideogramRouter from './src/routes/ideogram.js';
 
-// SaaS 路由（会员系统已于第二阶段删除，仅保留 AI 引擎 + V3 业务路由）
+// COXOF AI DIY V3 — 第二阶段业务路由
+import designsRouter from './src/routes/designs.js';
+import workflowsV3Router from './src/routes/workflows_v3.js';
+import podRouter from './src/routes/pod.js';
+import cartRouter from './src/routes/cart.js';
+import checkoutRouter from './src/routes/checkout.js';
+import ordersRouter from './src/routes/orders.js';
+import creatorProductsRouter from './src/routes/creatorProducts.js';
+import shareLinksRouter from './src/routes/shareLinks.js';
+import earningsRouter from './src/routes/earnings.js';
 
 const app = express();
 
@@ -66,6 +75,17 @@ app.get('/', (req, res) => {
 
 // ── 系统状态 ──
 app.use('/api', statusRouter);
+
+// ── COXOF AI DIY V3 — 第二阶段业务路由 ──
+app.use('/api/designs', designsRouter);
+app.use('/api/workflows-v3', workflowsV3Router);
+app.use('/api/pod', podRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/checkout', checkoutRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/creator-products', creatorProductsRouter);
+app.use('/api/share-links', shareLinksRouter);
+app.use('/api/earnings', earningsRouter);
 
 // ── AI 接口（统一加 optionalAuth + 用量追踪）──
 // 使用 optionalAuth 兼容未登录用户（旧前端透传 Key 模式）
@@ -158,7 +178,8 @@ const server = app.listen(PORT, () => {
   console.log('│  限流: ' + config.rateLimit.perMinute + '/分钟, AI ' + config.rateLimit.aiPerMinute + '/分钟             │');
   console.log('└──────────────────────────────────────────────────┘');
   console.log('\n已配置的 API 提供商:', Object.entries(config.apiKeys).filter(([_, v]) => v).map(([k]) => k).join(', ') || '无（请配置 .env）');
-  console.log('AI 路由: /api/ai/{gemini,bfl,photoroom,deepseek,doubao,ideogram}\n');
+  console.log('AI 路由: /api/ai/{gemini,bfl,photoroom,deepseek,doubao,ideogram}');
+  console.log('V3 路由: /api/designs, /api/workflows-v3, /api/pod, /api/cart, /api/checkout, /api/orders, /api/creator-products, /api/share-links, /api/earnings\n');
 });
 
 // 优雅关闭
