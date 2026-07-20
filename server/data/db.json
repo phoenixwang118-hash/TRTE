@@ -250,6 +250,25 @@
       "createdAt": "2026-07-18T15:21:28.957Z"
     }
   ],
+  "designs": [],
+  "design_versions": [],
+  "carts": [
+    {
+      "id": 1,
+      "userId": 1,
+      "createdAt": "2026-07-20T08:35:43.560Z",
+      "updatedAt": "2026-07-20T08:35:43.560Z"
+    }
+  ],
+  "cart_items": [],
+  "orders": [],
+  "order_items": [],
+  "addresses": [],
+  "payments": [],
+  "creator_products": [],
+  "share_links": [],
+  "creator_orders": [],
+  "earning_transactions": [],
   "_meta": {
     "nextUserId": 2,
     "nextWorkspaceId": 2,
@@ -257,6 +276,16 @@
     "nextWorkflowId": 4,
     "nextRunId": 1,
     "nextProductId": 9,
-    "nextDesignerId": 3
+    "nextDesignerId": 3,
+    "nextDesignId": 1,
+    "nextCartId": 2,
+    "nextCartItemId": 1,
+    "nextOrderId": 1,
+    "nextOrderItemId": 1,
+    "nextAddressId": 1,
+    "nextPaymentId": 1,
+    "nextCreatorProductId": 1,
+    "nextShareLinkId": 1,
+    "nextEarningId": 1
   }
 }
