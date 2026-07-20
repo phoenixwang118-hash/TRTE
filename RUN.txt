@@ -1,0 +1,53 @@
+CoXoF Ai Studio — 迁移到新电脑运行说明
+==========================================
+
+本压缩包已排除 node_modules（依赖目录），因为它们是符号链接，换机器后失效。
+在新电脑上按下面步骤安装依赖即可。
+
+
+【第一步】安装 Node.js
+- 下载并安装 Node.js 18 或以上版本：https://nodejs.org
+- 安装完成后，打开终端输入 node -v 确认版本。
+
+
+【第二步】安装项目依赖（只需首次执行一次）
+- 在项目根目录（含本文件的目录）执行：
+    npm install
+- 再进入后端目录安装：
+    cd server
+    npm install
+    cd ..
+
+
+【第三步】启动（开发模式，前后端一起起）
+- 在项目根目录执行：
+    node start.js
+- 启动后访问：
+    前端  http://localhost:5173
+    后端  http://localhost:3002
+
+- 如需分开启动：
+    后端：cd server && npm run dev
+    前端：npm run dev
+
+
+【默认测试账号】（数据库 seed 自动创建）
+- 邮箱：test@coxof.ai
+- 密码：123456
+
+
+【目录说明】
+- src/            前端 React 源码（落地页 + Studio 工作台）
+- server/         后端 Express 源码（认证 / 多租户 / Marketplace）
+- server/data/    JSON 数据库（db.json）与上架图片（mp/）
+- index.html      前端入口
+- vite.config.js  Vite 配置（/api 代理到 3002）
+- package.json    前端依赖与脚本
+- server/package.json  后端依赖与脚本
+
+
+【注意】
+- 后端需要 AI 引擎 API Key 才能实际生成图片；可在前端「设置」页填写，
+  或部署时在 server 环境配置（.env）。未配置 Key 时，生成功能无法调用真实引擎，
+  但 Marketplace 上架 / 列表 / 落地页展示等逻辑均可正常运行。
+- 数据库为本地 JSON 文件（server/data/db.json），无需额外数据库服务。
